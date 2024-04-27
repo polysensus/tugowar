@@ -1,0 +1,6 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.13;
+
+/* GENERATED FILE. WILL GET OVER WRITTEN */
+
+address constant TUGAWAR_ADDRESS=0xF567d52cF8da282841f537F85aB1617fd10eC7f8;
