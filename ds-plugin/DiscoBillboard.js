@@ -1,10 +1,10 @@
 import ds from 'downstream';
 
 const images = [
-'https://branding.polysensus.io/assets/images/favicon1/apple-icon-120x120-white.png',
 'https://branding.polysensus.io/assets/images/splash/polysensus-white-on-black-square.jpg',
 'https://branding.polysensus.io/assets/images/splash/polysensus-black-on-white-square.jpg',
-'https://branding.polysensus.io/assets/images/favicon1/apple-icon-120x120.png',
+'https://branding.polysensus.io/assets/images/favicon1/apple-icon-120x120-white.png',
+// 'https://branding.polysensus.io/assets/images/favicon1/apple-icon-120x120.png',
 // 'https://assets.downstream.game/examples/disco-beaver-0.jpeg',
 // 'https://assets.downstream.game/examples/disco-beaver-1.jpeg',
 // 'https://assets.downstream.game/examples/disco-beaver-2.jpeg',
@@ -61,8 +61,10 @@ export default async function update(state) {
                         id: 'default',
                         type: 'inline',
                         html: `
-                            <h3>Now Showing:</h3>
-                            <img src="${images[selectedImg]}" alt="Current Billboard Image">
+                            <h3>Spectate on an <a href="https://eips.ethereum.org/EIPS/eip-6551">ERC 6551</a> enabled Tug of War</h3>
+                            <p><img src="${images[selectedImg]}" alt="Polysensus Logo"></p>
+                            <p>Brought to you by <a href="https://www.polysensus.com/">Polysensus</a></p>
+                            <p>Made for the Lisbon AW24 <a href="https://robinbryce.medium.com/autonomous-worlds-2024-c7833daa111a">Hack</a> by @fupduk and @ann_so_330</p>
                             [${selectedImg + 1}/${images.length}]
                         `,
                         buttons: buttons,
