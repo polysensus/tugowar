@@ -5,6 +5,9 @@
 
 // --- lib deps
 import { ethers } from "ethers";
+import * as pkg from "@web3auth/ethereum-provider";
+const { EthereumPrivateKeyProvider } = pkg;
+
 import { getLogger } from "../log.js";
 
 import { awaitable, isFunction } from "../idioms.js";
@@ -229,10 +232,29 @@ export class Web3AuthModalProviderSwitchAbstract extends ProviderSwitch {
       delete this.web3authOptions.adapterSettings;
     }
 
-    const web3auth = this.newWeb3Auth({
-      ...this.web3authOptions,
-      chainConfig: chainConfig,
-    });
+    let privateKeyProvider;
+    try {
+      log.info(`Web3ModalProviderSwitch#_initWeb3Auth: CALL new EthereumPrivateKeyProvider`);
+      privateKeyProvider = new EthereumPrivateKeyProvider({
+        config: { chainConfig }
+      });
+    } catch (err) {
+      log.info(`Web3ModalProviderSwitch#_initWeb3Auth: new EthereumPrivateKeyProvider ERROR: ${err}`);
+      throw new Error(err);
+    }
+    log.info(`Web3ModalProviderSwitch#_initWeb3Auth: new EthereumPrivateKeyProvider OK`);
+
+    let web3auth;
+    try {
+      log.info(`Web3ModalProviderSwitch#_initWeb3Auth: CALL newWeb3Auth`);
+      web3auth = this.newWeb3Auth({
+        ...this.web3authOptions, privateKeyProvider,
+      });
+    } catch (err) {
+      log.info(`Web3ModalProviderSwitch#_initWeb3Auth: newWeb3Auth ERROR: ${err}`);
+      throw new Error(err);
+    }
+    log.info(`Web3ModalProviderSwitch#_initWeb3Auth: newWeb3Auth ok: ${web3auth}`);
     if (this.web3AuthAdapterSettings?.openlogin !== undefined) {
       const adapterSettings = this.web3AuthAdapterSettings.openlogin;
       log.info(
@@ -244,13 +266,16 @@ export class Web3AuthModalProviderSwitchAbstract extends ProviderSwitch {
         { ...this.web3authOptions, chainConfig },
         adapterSettings
       );
+      log.info(`Web3ModalProviderSwitch#_initWeb3Auth: newOpenLoginAdapter ok`);
       web3auth.configureAdapter(adapter);
+      log.info(`Web3ModalProviderSwitch#_initWeb3Auth: configureAdapter ok`);
     } else {
       log.info(
         `Web3ModalProviderSwitch#_initWeb3Auth: no adapter specialisations provided`
       );
     }
     await web3auth.initModal();
+    log.info(`Web3ModalProviderSwitch#_initWeb3Auth: initModal ok`);
     this.web3auth = web3auth;
   }
 

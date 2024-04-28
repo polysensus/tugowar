@@ -1,4 +1,4 @@
-import { ProviderType } from '@polysensus/chaintrap-arenastate';
+import { ProviderType } from '$lib/chainkit/providertypes.js';
 import { all } from '$lib/chains/supportedproviders.js';
 
 import { json } from '$lib/server/request.js';
