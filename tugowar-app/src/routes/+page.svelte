@@ -1,2 +1,2 @@
 <h1>Tug of War</h1>
-<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
+<p>See the <a href="https://github.com/polysensus/tugowar/blob/main/tugowar-app/README.md">README.md</a></p>
