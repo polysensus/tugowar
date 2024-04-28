@@ -40,7 +40,18 @@
 		"tslib": "^2.4.1",
 		"typescript": "^5.0.0",
 		"vite": "^5.0.3",
+		"vite-plugin-node-polyfills": "^0.21.0",
 		"vitest": "^1.2.0"
 	},
-	"type": "module"
+	"type": "module",
+	"dependencies": {
+		"@floating-ui/dom": "^1.6.4",
+		"@polysensus/chaintrap-arenastate": "^0.0.43",
+		"@web3auth/base": "^8.3.0",
+		"@web3auth/ethereum-provider": "^8.3.0",
+		"@web3auth/modal": "^8.3.0",
+		"@web3auth/openlogin-adapter": "^8.3.0",
+		"buffer": "^6.0.3",
+		"ethers": "5.7"
+	}
 }

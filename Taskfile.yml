@@ -272,7 +272,12 @@ tasks:
         echo "export TUGAWAR_ADDRESS=$ADDRESS" \
         > .env.{{.PROVIDER_ID}}.tugawar
         echo "export DS_ZONE_ADDR=$DS_ZONE_ADDR" \
-        >> .env.{{.PROVIDER_ID}}.tugawar
+        >> tugowar-app/.env.{{.PROVIDER_ID}}.tugawar
+
+        echo "export PUBLIC_{{.PROVIDER_ID | upper}}_TUGAWAR_ADDRESS=$ADDRESS" \
+        > .env.{{.PROVIDER_ID}}.tugawar
+        echo "export PUBLIC_{{.PROVIDER_ID | upper}}_DS_ZONE_ADDR=$DS_ZONE_ADDR" \
+        >> tugowar-app/.env.{{.PROVIDER_ID}}.tugawar
 
   deploy-tbas:
     desc: |
