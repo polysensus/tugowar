@@ -17,10 +17,10 @@ export function GET() {
     url: secrets['PUBLIC_LOCAL_URL'] ?? 'http://127.0.0.1:8545',
     polling: env['PUBLIC_LOCAL_POLLING'] ?? 800,
   } 
-  if (env['PUBLIC_LOCAL_TUGOWAR_ADDRESS'])
-    chain.arenaProxy = env['PUBLIC_LOCAL_TUGOWAR_ADDRESS'];
-  if (env['PUBLIC_LOCAL_TUGOWAR_DEPLOYER'])
-    chain.arenaDeployer = env['PUBLIC_LOCAL_TUGOWAR_DEPLOYER'];
+  if (env['PUBLIC_LOCAL_TUGAWAR_ADDRESS'])
+    chain.arenaProxy = env['PUBLIC_LOCAL_TUGAWAR_ADDRESS'];
+  if (env['PUBLIC_LOCAL_TUGAWAR_DEPLOYER'])
+    chain.arenaDeployer = env['PUBLIC_LOCAL_TUGAWAR_DEPLOYER'];
 
   return json(chain);
 }

@@ -20,11 +20,11 @@ export function GET() {
   if (!chain.url && env['PUBLIC_OP_SEPOLIA_URL'])
     chain.url = env['PUBLIC_OP_SEPOLIA_URL'];
 
-  if (env['PUBLIC_OP_SEPOLIA_TUGOWAR_ADDRESS'])
-    chain.arenaProxy = env['PUBLIC_OP_SEPOLIA_TUGOWAR_ADDRESS'];
+  if (env['PUBLIC_OP_SEPOLIA_TUGAWAR_ADDRESS'])
+    chain.arenaProxy = env['PUBLIC_OP_SEPOLIA_TUGAWAR_ADDRESS'];
 
-  if (env['PUBLIC_OP_SEPOLIA_TUGOWAR_DEPLOYER'])
-    chain.arenaDeployer = env['PUBLIC_OP_SEPOLIA_TUGOWAR_DEPLOYER'];
+  if (env['PUBLIC_OP_SEPOLIA_TUGAWAR_DEPLOYER'])
+    chain.arenaDeployer = env['PUBLIC_OP_SEPOLIA_TUGAWAR_DEPLOYER'];
 
   if (env['PUBLIC_OP_SEPOLIA_ETHERSCAN_URL'])
     chain.etherscanUrl = env['PUBLIC_OP_SEPOLIA_ETHERSCAN_URL'];

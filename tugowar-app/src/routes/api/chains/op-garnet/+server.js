@@ -12,8 +12,8 @@ export function GET() {
     currency: 'ETH',
     chainId: Number(env['PUBLIC_OP_GARNET_CHAINID']),
     polling: env['PUBLIC_OP_GARNET_POLLING'] ?? 2000,
-    arenaProxy: env['PUBLIC_OP_GARNET_TUGOWAR_ADDRESS'],
-    arenaDeployer: env['PUBLIC_OP_GARNET_TUGOWAR_DEPLOYER']
+    arenaProxy: env['PUBLIC_OP_GARNET_TUGAWAR_ADDRESS'],
+    arenaDeployer: env['PUBLIC_OP_GARNET_TUGAWAR_DEPLOYER']
   };
   if (secrets['OP_GARNET_URL'])
     chain.url = secrets['OP_GARNET_URL'];

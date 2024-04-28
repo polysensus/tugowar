@@ -1,8 +1,5 @@
 <script lang="ts">
 
-  import { awaitable } from '@polysensus/chaintrap-arenastate';
-  import { arenaConnect } from '@polysensus/chaintrap-arenastate';
-
   import { onMount, getContext } from 'svelte';
   import { page } from '$app/stores';
   import ProvidersList from '$lib/components/ProvidersList.svelte';

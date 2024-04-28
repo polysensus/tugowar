@@ -10,7 +10,7 @@ const { OpenloginAdapter } = web3auth_openlogin_adapter;
 
 // @ts-ignore
 
-import { Web3AuthModalProviderSwitchAbstract } from '@polysensus/chaintrap-arenastate';
+import { Web3AuthModalProviderSwitchAbstract } from '../chainkit/web3authmodalproviderswitch.js';
 
 /**
  * Web3ModalProviderSwitch adds support for cfg.type.startsWith('web3auth')

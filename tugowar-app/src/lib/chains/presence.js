@@ -1,4 +1,4 @@
-import { ProviderType } from '@polysensus/chaintrap-arenastate';
+import { ProviderType } from '../chainkit/providertypes.js';
 
 import { writable, derived, get } from 'svelte/store';
 

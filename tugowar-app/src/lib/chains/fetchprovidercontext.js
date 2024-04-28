@@ -1,4 +1,4 @@
-import { ProviderContext } from '@polysensus/chaintrap-arenastate';
+import { ProviderContext } from '../chainkit/providercontexts.js';
 
 import { apiPath } from './api.js';
 

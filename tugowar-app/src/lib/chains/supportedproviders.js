@@ -1,4 +1,4 @@
-import { ProviderType } from '@polysensus/chaintrap-arenastate';
+import { ProviderType } from '../chainkit/providertypes.js';
 
 export function namedProviderRoute(page) {
   if (typeof page?.url?.pathname !== "string") return undefined;
