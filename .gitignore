@@ -1,14 +1,20 @@
+/*.log
+
+# General junk not to be commited
+/kipple
 # Compiler files
 cache/
 out/
 
-# Ignores development broadcast logs
-!/broadcast
-/broadcast/*/31337/
-/broadcast/**/dry-run/
+/broadcast
+## Ignores development broadcast logs
+#!/broadcast
+#/broadcast/*/31337/
+#/broadcast/**/dry-run/
 
 # Docs
 docs/
 
-# Dotenv file
+# Dotenv files
 .env
+.env.*
