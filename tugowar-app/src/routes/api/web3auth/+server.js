@@ -9,6 +9,7 @@ export function GET() {
     clientId: env['PUBLIC_WEB3AUTH_CLIENT_ID'],
     web3AuthNetwork: env['PUBLIC_WEB3AUTH_NETWORK'],
     adapterSettings: {
+      enableMetamask: true,
       openlogin:{
         adapterSettings:{
           // "popup" works on desctop, "redirect" works for iPad, iPhone and phones in general
