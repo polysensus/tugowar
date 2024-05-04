@@ -275,6 +275,22 @@ export class Web3AuthModalProviderSwitchAbstract extends ProviderSwitch {
       );
     }
 
+    if (this.web3AuthAdapterSettings?.enableMetamask) {
+
+      const adapterSettings = this.web3AuthAdapterSettings.metamask;
+      log.info(
+        `Web3ModalProviderSwitch#_initWeb3Auth: configuring metamask adapter: ${JSON.stringify(
+          adapterSettings
+        )}`
+      );
+      const adapter = this.newMetamaskAdapter(
+        { ...this.web3authOptions, chainConfig },
+        adapterSettings
+      );
+      log.info(`Web3ModalProviderSwitch#_initWeb3Auth: newMetamaskAdapter ok`);
+      web3auth.configureAdapter(adapter);
+      log.info(`Web3ModalProviderSwitch#_initWeb3Auth: configureAdapter ok`);
+    }
     await web3auth.initModal();
     log.info(`Web3ModalProviderSwitch#_initWeb3Auth: initModal ok`);
     this.web3auth = web3auth;
