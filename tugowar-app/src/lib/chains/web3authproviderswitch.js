@@ -5,8 +5,6 @@ const { Web3Auth } = web3auth_modal;
 const { ADAPTER_STATUS } = web3auth_base;
 import * as web3auth_openlogin_adapter from '@web3auth/openlogin-adapter';
 const { OpenloginAdapter } = web3auth_openlogin_adapter;
-import * as web3auth_methmask_adapter from '@web3auth/metamask-adapter';
-const {MetamaskAdapter} = web3auth_methmask_adapter;
 
 // yayass
 
@@ -32,10 +30,6 @@ export class Web3AuthModalProviderSwitch extends Web3AuthModalProviderSwitchAbst
   newOpenLoginAdapter(cfg, adapterSettings) {
     // cfg is ignored, we assume that it contains clientId and network
     return new OpenloginAdapter(adapterSettings);
-  }
-
-  newMetamaskAdapter(cfg, adapterSettings) {
-    return new MetamaskAdapter(adapterSettings);
   }
 
   /**
