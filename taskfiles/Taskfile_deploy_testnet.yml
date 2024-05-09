@@ -1,0 +1,99 @@
+version: '3'
+
+vars:
+  PROVIDER_ID: '{{.PROVIDER_ID | default "local"}}'
+
+tasks:
+
+  help:
+    desc: extended help and reminders
+    cmds:
+      - |
+        echo "
+        required all:
+
+          RPC_URL: {{.RPC_URL}}
+
+        required some:
+
+          FUNDED_ADDRESS: {{.FUNDED_ADDRESS}}
+          FUNDED_KEY: {{.FUNDED_KEY}}
+          DEPLOY_PUB: {{.DEPLOY_PUB}}
+          DS_ZONE_ADDRESS: {{.DS_ZONE_ADDRESS}}
+          TUGAWAR_ADDRESS: {{.TUGAWAR_ADDRESS}}
+          DETERMINISTIC_DEPLOY_DEPLOY_SIGNER_PUB: $DETERMINISTIC_DEPLOY_DEPLOY_SIGNER_PUB
+          DETERMINISTIC_DEPLOY=$DETERMINISTIC_DEPLOY
+          ERC6551_REGISTRY_DEPLOY_DATA=$ERC6551_REGISTRY_DEPLOY_DATA
+          ERC6551_REGISTRY: $ERC6551_REGISTRY
+
+        Recipies
+          todo
+        
+        "
+
+  fund:
+    vars:
+      v: '{{.v | default "0.1ether"}}'
+    cmds:
+      - |
+        # use the transaction browser for the target chain to find a
+        # transaction from any account, check the account balance, if its >
+        # 1ether pick it as the FUNDED_ADDRESS
+        #
+        echo "Balance: FUNDED_ADDRESS={{.FUNDED_ADDRESS}}"
+        cast balance -r {{.RPC_URL}} {{.FUNDED_ADDRESS}}
+
+        cast send -r {{.RPC_URL}} \
+          --value {{.v}} \
+          --private-key {{.FUNDED_KEY}} \
+          --from {{.FUNDED_ADDRESS}} {{.DEPLOY_PUB}} \
+          --unlocked
+
+        echo "Balance: DEPLOY_PUB={{.DEPLOY_PUB}}"
+        cast balance -r {{.RPC_URL}} {{.DEPLOY_PUB}}
+
+
+  deployment-proxy:
+    desc: |
+      deploy arachnid's deterministic deployment proxy
+
+    cmds:
+      - |
+        # https://github.com/Arachnid/deterministic-deployment-proxy
+        #
+        echo $RPC
+        echo $FUNDED_KEY
+        echo $FUNDED_PUB
+        echo $DETERMINISTIC_DEPLOY_DEPLOY_SIGNER_PUB
+      
+        # fund the well known signer address
+       
+        cast send -r {{.RPC_URL}} --private-key {{.FUNDED_KEY}} --from {{.FUNDED_PUB}} \
+          --value 0.01ether $DETERMINISTIC_DEPLOY_DEPLOY_SIGNER_PUB
+
+        cast publish -r $RPC $DETERMINISTIC_DEPLOY_TX
+
+        cast code -r $RPC $DETERMINISTIC_DEPLOY
+
+  6551-reg:
+    desc: |
+      deploy the canonical 6551 registry
+
+      On many chains this is already deployed. For local testing in foundry it will need to be deployed.
+
+      This is one way to accomplish that.
+
+
+    cmds:
+      - |
+
+        # fund the deployer address, from the 10th well known anvil account
+        #cast send -r $RPC --private-key {{.FUNDED_KEY}} \
+        #  --from {{.FUNDED_PUB}} --value 0.01ether {{.DEPLOY_PUB}}
+
+        TX=$(cast mktx -r {{.RPC_URL}} --private-key {{.DEPLOY_KEY}} $DETERMINISTIC_DEPLOY $ERC6551_REGISTRY_DEPLOY_DATA)
+        echo $TX
+        cast publish -r {{.RPC_URL}} $TX
+
+        cast code -r {{.RPC_URL}} $ERC6551_REGISTRY
+

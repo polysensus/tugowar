@@ -1,0 +1,89 @@
+version: '3'
+
+vars:
+  PROVIDER_ID: local
+tasks:
+
+  help:
+    desc: extended help and reminders
+    cmds:
+      - |
+        echo "
+        FORK_URL: {{.FORK_URL}}
+        RPC_URL: {{.RPC_URL}}
+        FUNDED_ADDRESS: {{.FUNDED_ADDRESS}}
+        DEPLOY_PUB: {{.DEPLOY_PUB}}
+        DS_ZONE_ADDRESS: {{.DS_ZONE_ADDRESS}}
+        TUGAWAR_ADDRESS: {{.TUGAWAR_ADDRESS}}
+
+        Recipies
+          todo
+        
+        "
+
+  up:
+    cmds:
+      - |
+        echo "FORK_URL: {{.FORK_URL}}"
+        anvil --fork-url {{.FORK_URL}}
+        exit 0
+
+  fund-deploy:
+    vars:
+      v: '{{.v | default "0.1ether"}}'
+    cmds:
+      - |
+        # use the transaction browser for the target chain to find a
+        # transaction from any account, check the account balance, if its >
+        # 1ether pick it as the FUNDED_ADDRESS
+        #
+        echo "Balance: FUNDED_ADDRESS={{.FUNDED_ADDRESS}}"
+        cast balance -r {{.RPC_URL}} {{.FUNDED_ADDRESS}}
+
+        cast rpc -r {{.RPC_URL}} \
+          anvil_impersonateAccount {{.FUNDED_ADDRESS}}
+        cast send -r {{.RPC_URL}} \
+          --value {{.v}} \
+          --from {{.FUNDED_ADDRESS}} {{.DEPLOY_PUB}} \
+          --unlocked
+
+        echo "Balance: DEPLOY_PUB={{.DEPLOY_PUB}}"
+        cast balance -r {{.RPC_URL}} {{.DEPLOY_PUB}}
+
+  deploy-tugawar:
+    desc: deply the tug awar game contract
+    dotenv: [".env.{{.PROVIDER_ID}}", ".env.{{.PROVIDER_ID}}.6551"]
+    vars:
+      dryrun: '{{.dryrun | default false}}'
+    cmds:
+      - |
+        cast rpc -r {{.RPC_URL}} \
+          anvil_impersonateAccount {{.DEPLOY_PUB}}
+
+        XARGS="--skip-simulation {{.CLI_ARGS}}"
+        ! {{.dryrun}} && XARGS="$XARGS --broadcast"
+
+        export DS_ZONE_ADDR={{.DS_ZONE_ADDRESS}}
+
+        OUTLOG=deployed.tugawar.log
+        forge script \
+          --rpc-url $RPC scripts/DeployTugAWar.s.sol \
+          --json $XARGS \
+          --silent  > $OUTLOG 2> /dev/null
+        cat $OUTLOG
+
+        ADDRESS=$(head -n 1 $OUTLOG  | jq -r .logs[0])
+        if {{.dryrun}}; then
+          echo TUGAWAR_ADDRESS=$ADDRESS
+          exit 0
+        fi
+        echo "export TUGAWAR_ADDRESS=$ADDRESS" \
+        > .env.{{.PROVIDER_ID}}.tugawar
+        echo "export DS_ZONE_ADDR={{.DS_ZONE_ADDRESS}}" \
+        >> .env.{{.PROVIDER_ID}}.tugawar
+
+        echo "export PUBLIC_{{.PROVIDER_ID | upper}}_TUGAWAR_ADDRESS=$ADDRESS" \
+        > tugowar-app/.env.{{.PROVIDER_ID}}.tugawar
+        echo "export PUBLIC_{{.PROVIDER_ID | upper}}_DS_ZONE_ADDR=$DS_ZONE_ADDR" \
+        >> tugowar-app/.env.{{.PROVIDER_ID}}.tugawar
+
