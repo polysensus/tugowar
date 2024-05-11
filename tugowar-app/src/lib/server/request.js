@@ -1,3 +1,32 @@
+import * as env from '$env/static/public';
+import { env as secrets } from '$env/dynamic/private';
+import { error } from '@sveltejs/kit';
+
+export function requireChainEnv(chainCfg, name) {
+  const prefix = toUpperCaseWords(chainCfg.name);
+  return requireEnv(`PUBLIC_${prefix}_${name}`);
+}
+
+export function requireEnv(name) {
+  const value = env[name];
+  if (!value)
+    throw error(400, {message: `env value not found (or empty) for ${name}`});
+  return value;
+}
+
+export function requireSecret(name) {
+  const value = secrets[name];
+  if (!value)
+    throw error(400, {message: `secret value not found (or empty) for ${name}`});
+  return value;
+}
+
+export function requireParam(url, name) {
+  let value = url.searchParams.get(name);
+  if (!value)
+    throw error(404, {message: `${name} is a required query parameter`});
+  return value;
+}
 /** deriveOptions
  * Creates new options object by merging the provided request and update options.
  *

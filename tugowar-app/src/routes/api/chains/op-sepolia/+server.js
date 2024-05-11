@@ -23,11 +23,17 @@ export function GET() {
   if (env['PUBLIC_OP_SEPOLIA_TUGAWAR_ADDRESS'])
     chain.arenaProxy = env['PUBLIC_OP_SEPOLIA_TUGAWAR_ADDRESS'];
 
-  if (env['PUBLIC_OP_SEPOLIA_TUGAWAR_DEPLOYER'])
-    chain.arenaDeployer = env['PUBLIC_OP_SEPOLIA_TUGAWAR_DEPLOYER'];
+  if (env['PUBLIC_OP_SEPOLIA_DS_ZONE_ADDR'])
+    chain.dsZoneAddress = env['PUBLIC_OP_SEPOLIA_DS_ZONE_ADDR'];
 
   if (env['PUBLIC_OP_SEPOLIA_ETHERSCAN_URL'])
     chain.etherscanUrl = env['PUBLIC_OP_SEPOLIA_ETHERSCAN_URL'];
+
+  if (env['PUBLIC_OP_SEPOLIA_ZERODEV_PROJECT_ID']) {
+    chain.zeroDevProjectId = env['PUBLIC_OP_SEPOLIA_ZERODEV_PROJECT_ID'];
+    chain.bundlerUrl = env['PUBLIC_OP_SEPOLIA_BUNDLER_URL'];
+    chain.payMasterUrl = env['PUBLIC_OP_SEPOLIA_PAYMASTER_URL'];
+  }
 
   return json(chain);
 }

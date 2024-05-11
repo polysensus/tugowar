@@ -7,6 +7,14 @@ export function isUndefined(value) {
   return typeof value === "undefined";
 }
 
+export function toUpperCaseWords(s, {sep, targetSep}) {
+  if (!sep)
+    sep = '-';
+  if (!targetSep)
+    targetSep = '_';
+  return s.split(sep).map((word) => word.toUpperCase()).join(targetSep);
+}
+
 /** isAsync checks if the value is an async function */
 export function isAsync(value) {
   return value?.constructor?.name === "AsyncFunction";

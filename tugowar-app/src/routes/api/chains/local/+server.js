@@ -21,6 +21,8 @@ export function GET() {
     chain.arenaProxy = env['PUBLIC_LOCAL_TUGAWAR_ADDRESS'];
   if (env['PUBLIC_LOCAL_TUGAWAR_DEPLOYER'])
     chain.arenaDeployer = env['PUBLIC_LOCAL_TUGAWAR_DEPLOYER'];
+  if (env['PUBLIC_LOCAL_DS_ZONE_ADDR'])
+    chain.dsZoneAddress = env['PUBLIC_LOCAL_DS_ZONE_ADDR'];
 
   return json(chain);
 }

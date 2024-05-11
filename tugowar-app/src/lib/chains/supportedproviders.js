@@ -34,6 +34,13 @@ export function namedProviderRoute(page) {
 }
 
 export const all = {};
+/*
+all['redstone'] = {
+  name: 'redstone',
+  type: ProviderType.Web3AuthModal,
+  fetch: true
+};
+
 all['op-garnet'] = {
   name: 'op-garnet',
   type: ProviderType.Web3AuthModal,
@@ -45,7 +52,7 @@ all['op-garnet-rpc'] = {
   name: 'op-garnet',
   type: ProviderType.NamedRPC,
   fetch: true
-};
+};*/
 
 all['op-sepolia'] = {
   name: 'op-sepolia',

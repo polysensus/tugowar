@@ -1,15 +1,12 @@
-import {
-  PUBLIC_OP_GARNET_TUGAWAR_ADDRESS,
-  PUBLIC_OP_SEPOLIA_TUGAWAR_ADDRESS,
-  PUBLIC_LOCAL_TUGAWAR_ADDRESS
- } from '$env/static/public';
+import * as env from '$env/static/public';
 /** @type {import('./$types').PageLoad} */
 export function load({params, url, route}) {
   return {
     arenaAddress:{
-      "op-garnet": PUBLIC_OP_GARNET_TUGAWAR_ADDRESS,
-      "op-sepolia": PUBLIC_OP_SEPOLIA_TUGAWAR_ADDRESS,
-      "local": PUBLIC_LOCAL_TUGAWAR_ADDRESS,
+      "redstone": env['PUBLIC_REDSTONE_TUGAWAR_ADDRESS'] ?? '',
+      "op-garnet": env['PUBLIC_OP_GARNET_TUGAWAR_ADDRESS'] ?? '',
+      "op-sepolia": env['PUBLIC_OP_SEPOLIA_TUGAWAR_ADDRESS'] ?? '',
+      "local": env['PUBLIC_LOCAL_TUGAWAR_ADDRESS'] ?? '',
     },
     request: {
       href:url.href,
