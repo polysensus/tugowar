@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "forge-std/Script.sol";
+import {console} from "forge-std/Script.sol";
+import {DeployScriptBase} from "./DeployScriptBase.sol";
 import {IERC6551Registry} from "erc6551/interfaces/IERC6551Registry.sol";
 import {ERC6551Account} from "src/ERC6551Account.sol";
 import {TugAWar} from "src/TugAWar.sol";
@@ -15,21 +16,22 @@ import {TugAWar} from "src/TugAWar.sol";
 //   source .env.local
 //   forge script scripts/CreateZoneTBAs.s.sol
 //
-contract CreateZoneTokenBountAccountsScript is Script {
+contract CreateZoneTokenBountAccountsScript is DeployScriptBase {
 
   function run() public {
-    uint256 deployKey = vm.envUint("DEPLOY_KEY");
-    vm.startBroadcast(deployKey);
-    runInternal();
+    startBroadcast();
+    _run();
     vm.stopBroadcast();
   }
 
-  function runInternal() internal {
+  function _run() internal {
 
 
     bytes32 deploymentSalt = vm.envOr("SALT", bytes32("ds.polysensus.com"));
-    uint256 firstTokenId = vm.envOr("FIRST", uint256(1));
-    uint256 accountCount = vm.envOr("NUM_ACCOUNTS", uint256(50));
+    // Assumes the token alocates id's as simple consecutive numbers. This is
+    // by no means guaranteed to be the case, but it is true for downstream
+    uint256 firstTokenId = vm.envOr("START", uint256(1));
+    uint256 accountCount = vm.envOr("COUNT", uint256(5));
 
     address EIP6551_REGISTRY = vm.envAddress("ERC6551_REGISTRY");
     address payable EIP6551_ACCOUNT_IMLEMENTATION_ADDRESS = payable(vm.envAddress("ERC6551_ACCOUNT_IMLEMENTATION_ADDRESS"));

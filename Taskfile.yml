@@ -1,25 +1,72 @@
 version: '3'
 
-
 dotenv:
   - ".env"
   - ".env.secret"
 
 vars:
-  PROVIDER_ID: '{{.PROVIDER_ID | default "local"}}'
+  PROVIDER_ID: '{{.PROVIDER_ID | default env "PROVIDER_ID"}}'
   PLUG_DIR:
     sh: "echo $(cd {{.PLUG_DIR}} && pwd)"
   DS_DIR:
     sh: "echo $(cd {{.DS_DIR}} && pwd)"
   DS:
     sh: "echo 'node $(cd {{.DS_DIR}} && pwd)/cli/dist/ds.js'"
-tasks:
 
+
+includes:
+  ds:
+    taskfile: ./taskfiles/Taskfile_ds.yml
+
+  fork:
+    taskfile: ./taskfiles/Taskfile_fork.yml
+    vars:
+      FORK_URL: $FORK_URL
+      RPC_URL: http://localhost:8545
+      FUNDED_ADDRESS: $FORK_FUNDED_ADDRESS
+      DEPLOY_PUB: $FORK_DEPLOY_PUB
+      DS_ZONE_ADDRESS: $FORK_DS_ZONE_ADDR
+      TUGAWAR_ADDRESS: $FORK_TUGAWAR_ADDRESS
+
+  deploy-redstone:
+    taskfile: ./taskfiles/Taskfile_deploy_mainnet.yml
+    vars:
+      DEPLOY_HD_PATH: $REDSTONE_DEPLOY_HD_PATH
+      RPC_URL: $REDSTONE_RPC_URL
+      DS_ZONE_ADDR: $REDSTONE_DS_ZONE_ADDR
+
+  deploy-garnet:
+    taskfile: ./taskfiles/Taskfile_deploy_testnet.yml
+    vars:
+      RPC_URL: $GARNET_RPC_URL
+      FUNDED_ADDRESS: $GARNET_FUNDED_ADDRESS
+      FUNDED_KEY: $GARNET_FUNDED_KEY
+      DEPLOY_PUB: $GARNET_DEPLOY_PUB
+      DS_ZONE_ADDRESS: $GARNET_DS_ZONE_ADDR
+      TUGAWAR_ADDRESS: $GARNET_TUGAWAR_ADDRESS
+
+  deploy-sepolia:
+    taskfile: ./taskfiles/Taskfile_deploy_testnet.yml
+    vars:
+      RPC_URL: $OP_SEPOLIA_RPC_URL
+      FUNDED_ADDRESS: $OP_SEPOLIA_FUNDED_ADDRESS
+      FUNDED_KEY: $OP_SEPOLIA_FUNDED_KEY
+      DEPLOY_PUB: $OP_SEPOLIA_DEPLOY_PUB
+      DS_ZONE_ADDRESS: $OP_SEPOLIA_DS_ZONE_ADDR
+      TUGAWAR_ADDRESS: $OP_SEPOLIA_TUGAWAR_ADDRESS
+
+tasks:
   help:
+    dotenv: [".env.{{.PROVIDER_ID}}"]
     desc: extended help and reminders
     cmds:
       - |
-        echo '
+        echo "
+        PROVIDER_ID: {{.PROVIDER_ID}}
+        PROVIDER_ID: $PROVIDER_ID
+
+        PROVIDER_ID: {{.PROVIDER_ID}}
+        RPC: $RPC
         Recipies
         
         1. startup local dev for fork testing
@@ -36,66 +83,25 @@ tasks:
            # service log
 
            task ds-apply
-        '
-
-  local-up:
-    desc: |
-      start up the local downstream development
-
-      CLI_ARGS passed to docker compose up. eg '-- --pull=always'
-
-    cmds:
-      - |
-        [[ "{{.PROVIDER_ID}}" != "local" ]] && echo "PROVIDER_ID must be 'local'" && exit 1
-        exit 0
-      # - cd {{.DS_DIR}} && docker compose up --pull=always
-      # - cd {{.DS_DIR}} && docker compose up --wait {{.CLI_ARGS}}
-      - cd {{.DS_DIR}} && docker compose up {{.CLI_ARGS}}
+        "
 
   local-down:
     cmds:
       - cd {{.DS_DIR}} && docker compose down
 
-  deploy-contracts:
-    dotenv: [".env.{{.PROVIDER_ID}}"]
-    cmds:
-      - task: deploy-deployment-proxy
-      - task: deploy-6551-reg
-      - task: deploy-account-impl
-      - task: deploy-tugawar
-      - task: deploy-tbas
+  testnet:deploy-contracts:
+    desc:
+      deploy the pre-requisite contracts on any testnet
+      this task, and all sub tasks are configured to use private keys from env
 
-  ds-apply:
-    dotenv: [".env.{{.PROVIDER_ID}}", ".env.{{.PROVIDER_ID}}.tugawar"]
-    cmds:
-      - |
-        echo "PLUG_DIR: {{.PLUG_DIR}}"
-        echo "DS_ZONE: $DS_ZONE"
-        echo "DS_NETWORK: $DS_NETWORK"
-        cd {{.PLUG_DIR}}
-        ds apply -z $DS_ZONE -n $DS_NETWORK \
-          -k $ZONE_KEY -R -f .
+      AND MAY USE LARGE AMOUNTS OF ETHER
 
-  ds-zone-addr:
-    desc: get the zone contract address
-    dotenv: [".env.{{.PROVIDER_ID}}"]
     cmds:
-      - |
-        GAME_ADDR=$(curl -s -X POST -H "Content-Type: application/json" \
-          -d'{"query": "{ games { addr: id } }"}' \
-          $DS_QUERY_URL | jq -r .data.games[0].addr)
-
-        ZONE_ADDR=$(cast call -r $RPC $GAME_ADDR 'zoneOwnership()')
-        echo ${ZONE_ADDR: -40}
-
-  ds-game-addr:
-    desc: run the graph  ql query to obtain the building kind contract addresses
-    dotenv: [".env.{{.PROVIDER_ID}}"]
-    cmds:
-      - |
-        curl -s -X POST -H "Content-Type: application/json" \
-          -d'{"query": "{ games { addr: id } }"}' \
-          $DS_QUERY_URL | jq -r .data.games[0].addr
+      - task: testnet:deploy-deployment-proxy
+      - task: testnet:deploy-6551-reg
+      - task: testnet:deploy-account-impl
+      - task: testnet:deploy-tugawar
+      - task: testnet:deploy-tbas
 
   fork-tests:
     dotenv: [".env.{{.PROVIDER_ID}}", ".env.{{.PROVIDER_ID}}.6551"]
@@ -118,43 +124,6 @@ tasks:
         FOUNDRY_PROFILE="{{.PROVIDER_ID}}" forge test -vvv {{.CLI_ARGS}}
 
 
-  ds-latest:
-    desc: "exec into the contracts container and cat latest.json"
-    cmds:
-      - docker container exec -it ds-contracts-1 cat /contracts/out/latest.json
-
-  ds-contracts-cp:
-    desc: "copy the contracts directory from the running container to {{.ROOT_DIR}}/ds/contracts"
-    cmds:
-      - docker cp ds-contracts-1:/contracts ds/
-
-  build:ds-cli:
-    desc: "build ds cli"
-    cmds:
-      - |
-        cd '{{.DS_DIR}}/cli'
-        pwd
-        npm run build
-
-  ds-addrs:
-    desc: run the graph  ql query to obtain the building kind contract addresses
-    dotenv: [".env.{{.PROVIDER_ID}}"]
-    cmds:
-      - |
-        curl -X POST -H "Content-Type: application/json" \
-          -d'{"query": "{ games { addr: id state {addr: id} router {addr: id} dispatcher {addr: id} dispatcher {addr: id}} }"}' \
-          $DS_QUERY_URL
-
-  ds-plug-addrs:
-    desc: run the graph  ql query to obtain the building kind contract addresses
-    dotenv: [".env.{{.PROVIDER_ID}}"]
-    cmds:
-      - |
-        curl -X POST -H "Content-Type: application/json" \
-          -d'{"query": "{ games { state { buildingKinds: nodes(match: {kinds:\"BuildingKind\"}) { name: annotation(name: \"name\") { value } contract: nodes(match: {kinds: \"Extension\"}) { addr: key } } } } }"}' \
-          $DS_QUERY_URL
-
-
   check-6551:
     dotenv: [".env.{{.PROVIDER_ID}}"]
     desc: |
@@ -171,157 +140,3 @@ tasks:
         cast code \
           -r $RPC \
             $ERC6551_REGISTRY
-
-
-  deploy-deployment-proxy:
-    dotenv: [".env.{{.PROVIDER_ID}}"]
-    desc: |
-      deploy arachnid's deterministic deployment proxy
-
-    cmds:
-      - |
-        # https://github.com/Arachnid/deterministic-deployment-proxy
-      
-        # fund the well known signer address with plenty of eth from the last
-        # well known FOUNDRY test account
-
-        cast send -r $RPC --private-key $FUNDED_KEY --from $FUNDED_PUB \
-          --value 1ether $DETERMINISTIC_DEPLOY_DEPLOY_SIGNER_PUB
-
-        cast publish -r $RPC $DETERMINISTIC_DEPLOY_TX
-
-        cast code -r $RPC $DETERMINISTIC_DEPLOY
-
-
-  deploy-6551-reg:
-    dotenv: [".env.{{.PROVIDER_ID}}"]
-    desc: |
-      deploy the canonical 6551 registry
-
-      On many chains this is already deployed. For local testing in foundry it will need to be deployed.
-
-      This is one way to accomplish that.
-
-
-    cmds:
-      - |
-
-        # fund the deployer address, from the 10th well known anvil account
-        cast send -r $RPC --private-key $FUNDED_KEY \
-          --from $FUNDED_PUB --value 1ether $DEPLOY_PUB
-
-        TX=$(cast mktx -r $RPC --private-key $DEPLOY_KEY $DETERMINISTIC_DEPLOY $ERC6551_REGISTRY_DEPLOY_DATA)
-        echo $TX
-        cast publish -r $RPC $TX
-
-        cast code -r $RPC $ERC6551_REGISTRY
-
-
-  deploy-account-impl:
-    desc: deply the account implementation for the token bound accounts
-    dotenv: [".env.{{.PROVIDER_ID}}"]
-    vars:
-      dryrun: '{{.dryrun | default false}}'
-    cmds:
-      - |
-
-        XARGS="--skip-simulation {{.CLI_ARGS}}"
-        ! {{.dryrun}} && XARGS="$XARGS --broadcast"
-
-        OUTLOG=deployed.account.implementation.log
-        forge script \
-          --rpc-url $RPC scripts/DeployAccountImpl.s.sol \
-          --silent --json $XARGS > $OUTLOG 2> /dev/null
-
-        ADDRESS=$(head -n 1 $OUTLOG  | jq -r .logs[0])
-        if {{.dryrun}}; then
-          echo ERC6551_ACCOUNT_IMLEMENTATION_ADDRESS=$ADDRESS
-          exit 0
-        fi
-
-        echo "export ERC6551_REGISTRY=0x000000006551c19487814612e58FE06813775758" \
-        > .env.{{.PROVIDER_ID}}.6551
-        echo "export ERC6551_ACCOUNT_IMLEMENTATION_ADDRESS=$ADDRESS" \
-        >> .env.{{.PROVIDER_ID}}.6551
-
-        cat .env.{{.PROVIDER_ID}}.6551
-
-
-  deploy-tugawar:
-    desc: deply the tug awar game contract
-    dotenv: [".env.{{.PROVIDER_ID}}", ".env.{{.PROVIDER_ID}}.6551"]
-    vars:
-      dryrun: '{{.dryrun | default false}}'
-    cmds:
-      - |
-        XARGS="--skip-simulation {{.CLI_ARGS}}"
-        ! {{.dryrun}} && XARGS="$XARGS --broadcast"
-
-        export DS_ZONE_ADDR=$(task -s -d {{.ROOT_DIR}} ds-zone-addr)
-
-        OUTLOG=deployed.tugawar.log
-        forge script \
-          --rpc-url $RPC scripts/DeployTugAWar.s.sol \
-          --silent --json $XARGS > $OUTLOG 2> /dev/null
-
-        ADDRESS=$(head -n 1 $OUTLOG  | jq -r .logs[0])
-        if {{.dryrun}}; then
-          echo TUGAWAR_ADDRESS=$ADDRESS
-          exit 0
-        fi
-        echo "export TUGAWAR_ADDRESS=$ADDRESS" \
-        > .env.{{.PROVIDER_ID}}.tugawar
-        echo "export DS_ZONE_ADDR=$DS_ZONE_ADDR" \
-        >> tugowar-app/.env.{{.PROVIDER_ID}}.tugawar
-
-        echo "export PUBLIC_{{.PROVIDER_ID | upper}}_TUGAWAR_ADDRESS=$ADDRESS" \
-        > .env.{{.PROVIDER_ID}}.tugawar
-        echo "export PUBLIC_{{.PROVIDER_ID | upper}}_DS_ZONE_ADDR=$DS_ZONE_ADDR" \
-        >> tugowar-app/.env.{{.PROVIDER_ID}}.tugawar
-
-  deploy-tbas:
-    desc: |
-      deploy a number of token bound accounts. note that these can be created
-      at any time. the are only usable when the respective token ids are minted.
-
-    dotenv: [".env.{{.PROVIDER_ID}}", ".env.{{.PROVIDER_ID}}.6551"]
-    vars:
-      first: '{{.first | default "0"}}'
-      n: '{{.n | default "5"}}'
-      salt: '{{.salt | default "ds.polysensus.com"}}'
-      dryrun: '{{.dryrun | default false}}'
-
-    cmds:
-      - |
-
-        XARGS="--skip-simulation {{.CLI_ARGS}}"
-        ! {{.dryrun}} && XARGS="$XARGS --broadcast"
-
-        export DS_ZONE_ADDR=$(task -s -d {{.ROOT_DIR}} ds-zone-addr)
-        export FIRST={{.first}}
-        export NUM_ACCOUNTS={{.n}}
-        export SALT={{.salt}}
-        echo "DS_ZONE_ADDR: $DS_ZONE_ADDR"
-        echo "FIRST:        $FIRST"
-        echo "NUM_ACCOUNTS: $NUM_ACCOUNTS"
-        echo "SALT:         $SALT"
-        OUTLOG=deployed.account.implementation.log
-        forge script \
-          --fork-url $RPC $XARGS \
-          scripts/CreateZoneTBAs.s.sol > $OUTLOG 2> /dev/null
-
-        rm -f .env.{{.PROVIDER_ID}}.tbas
-        i=0
-        for addr in $(cat $OUTLOG | fgrep zoneAccount | cut -d' ' -f5); do
-          if {{.dryrun}}; then
-            echo "export ACCOUNT${i}=$addr"
-          else
-            echo "export ACCOUNT${i}=$addr" >> .env.{{.PROVIDER_ID}}.tbas
-          fi
-          i=$((i+1))
-        done
-        {{.dryrun}} && exit 0
-        cat .env.{{.PROVIDER_ID}}.tbas
-
-
-

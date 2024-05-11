@@ -1,0 +1,202 @@
+version: '3'
+
+tasks:
+  help:
+    desc: extended help and reminders
+    cmds:
+      - |
+        source .env.{{.PROVIDER_ID}}
+        echo "
+        PROVIDER_ID: {{.PROVIDER_ID}}
+        PLUG_DIR: {{.PLUG_DIR}}
+        DS_DIR: {{.DS_DIR}}
+
+        required all:
+
+          RPC_URL: {{.RPC_URL}}
+
+        required some:
+
+          PLUG_DIR: {{.PLUG_DIR}}
+          DS_ZONE: {{.DS_ZONE}}
+          DS_ZONE_ADDRESS: {{.DS_ZONE_ADDRESS}}
+          DS_NETWORK: {{.DS_NETWORK}}
+          DS_QUERY_URL: {{.DS_QUERY_URL}}
+
+          FUNDED_ADDRESS: {{.FUNDED_ADDRESS}}
+          FUNDED_KEY: {{.FUNDED_KEY}}
+          DEPLOY_PUB: {{.DEPLOY_PUB}}
+          TUGAWAR_ADDRESS: {{.TUGAWAR_ADDRESS}}
+          ERC6551_REGISTRY: $ERC6551_REGISTRY
+
+        Recipies
+          todo
+        "
+
+  zone-addr:
+    desc: get the zone contract address
+    required:
+      - DS_QUERY_URL
+    cmds:
+      - |
+        GAME_ADDR=$(curl -s -X POST -H "Content-Type: application/json" \
+          -d'{"query": "{ games { addr: id } }"}' \
+          {{.DS_QUERY_URL}} | jq -r .data.games[0].addr)
+
+        ZONE_ADDR=$(cast call -r $RPC $GAME_ADDR 'zoneOwnership()')
+        echo ${ZONE_ADDR: -40}
+
+  game-addr:
+    desc: run the graph  ql query to obtain the building kind contract addresses
+    required:
+      - DS_QUERY_URL
+    cmds:
+      - |
+        curl -s -X POST -H "Content-Type: application/json" \
+          -d'{"query": "{ games { addr: id } }"}' \
+          {{.DS_QUERY_URL}} | jq -r .data.games[0].addr
+
+
+  cat-latest:
+    desc: "exec into the contracts container and cat latest.json"
+    cmds:
+      - docker container exec -it ds-contracts-1 cat /contracts/out/latest.json
+
+  contracts-cp:
+    desc: "copy the contracts directory from the running container to {{.ROOT_DIR}}/ds/contracts"
+    cmds:
+      - docker cp ds-contracts-1:/contracts ds/
+
+  build-cli:
+    desc: "build ds cli"
+    cmds:
+      - |
+        cd '{{.DS_DIR}}/cli'
+        pwd
+        npm run build
+
+  addrs:
+    desc: run the graph  ql query to obtain the building kind contract addresses
+    cmds:
+      - |
+        curl -X POST -H "Content-Type: application/json" \
+          -d'{"query": "{ games { addr: id state {addr: id} router {addr: id} dispatcher {addr: id} dispatcher {addr: id}} }"}' \
+          {{.DS_QUERY_URL}}
+
+  plug-addrs:
+    desc: run the graph  ql query to obtain the building kind contract addresses
+    cmds:
+      - |
+        curl -X POST -H "Content-Type: application/json" \
+          -d'{"query": "{ games { state { buildingKinds: nodes(match: {kinds:\"BuildingKind\"}) { name: annotation(name: \"name\") { value } contract: nodes(match: {kinds: \"Extension\"}) { addr: key } } } } }"}' \
+          {{.DS_QUERY_URL}}
+
+  local-apply:
+    cmds:
+      - |
+        echo "PROVIDER_ID: {{.PROVIDER_ID}}"
+        echo "DS_ZONE: {{.DS_ZONE}}"
+        echo "DS_NETWORK: {{.DS_NETWORK}}"
+        cd {{.PLUG_DIR}}
+        ds apply -z {{.DS_ZONE}} -n {{.DS_NETWORK}} \
+          -k $LOCAL_ZONE_KEY -R -f .
+
+  deploy-tugawar:
+    desc: deply the tug awar game contract
+    vars:
+      dryrun: '{{.dryrun | default false}}'
+    cmds:
+      - |
+        source .env.{{.PROVIDER_ID}}
+        source .env.{{.PROVIDER_ID}}.6551
+
+        XARGS="--skip-simulation {{.CLI_ARGS}}"
+        ! {{.dryrun}} && XARGS="$XARGS --broadcast"
+
+        # export DS_ZONE_ADDR=$(PROVIDER_ID={{.PROVIDER_ID}} task -s -d {{.ROOT_DIR}} ds:zone-addr)
+        # !!! this is a chaintrap token
+        export DS_ZONE_ADDR=0xE2205B98c12c5C2F5E58299E7eF2247215CfbEF6
+
+        OUTLOG=deployed.tugawar.log
+        forge script \
+          --rpc-url $RPC scripts/DeployTugAWar.s.sol \
+          --json $XARGS
+
+        # --silent  > $OUTLOG 2> /dev/null
+
+        ADDRESS=$(head -n 1 $OUTLOG  | jq -r .logs[0])
+        if {{.dryrun}}; then
+          echo TUGAWAR_ADDRESS=$ADDRESS
+          exit 0
+        fi
+        echo "export TUGAWAR_ADDRESS=$ADDRESS" \
+        > .env.{{.PROVIDER_ID}}.tugawar
+        echo "export DS_ZONE_ADDR=$DS_ZONE_ADDR" \
+        >> .env.{{.PROVIDER_ID}}.tugawar
+
+        echo "export PUBLIC_{{.PROVIDER_ID | upper}}_TUGAWAR_ADDRESS=$ADDRESS" \
+        > tugowar-app/.env.{{.PROVIDER_ID}}.tugawar
+        echo "export PUBLIC_{{.PROVIDER_ID | upper}}_DS_ZONE_ADDR=$DS_ZONE_ADDR" \
+        >> tugowar-app/.env.{{.PROVIDER_ID}}.tugawar
+
+  deploy-tbas:
+    desc: |
+      deploy a number of token bound accounts. note that these can be created
+      at any time. the are only usable when the respective token ids are minted.
+
+    vars:
+      first: '{{.first | default "0"}}'
+      n: '{{.n | default "5"}}'
+      salt: '{{.salt | default "ds.polysensus.com"}}'
+      dryrun: '{{.dryrun | default false}}'
+
+    cmds:
+      - |
+
+        source .env.{{.provider_id}}
+        source .env.{{.provider_id}}.6551
+
+        xargs="--skip-simulation {{.cli_args}}"
+        ! {{.dryrun}} && XARGS="$XARGS --broadcast"
+
+        export DS_ZONE_ADDR=$(PROVIDER_ID={{.PROVIDER_ID}} task -s -d {{.ROOT_DIR}} ds:zone-addr)
+        export FIRST={{.first}}
+        export NUM_ACCOUNTS={{.n}}
+        export SALT={{.salt}}
+        echo "DS_ZONE_ADDR: $DS_ZONE_ADDR"
+        echo "FIRST:        $FIRST"
+        echo "NUM_ACCOUNTS: $NUM_ACCOUNTS"
+        echo "SALT:         $SALT"
+        OUTLOG=deployed.account.implementation.log
+        forge script \
+          --fork-url $RPC $XARGS \
+          scripts/CreateZoneTBAs.s.sol > $OUTLOG 2> /dev/null
+
+        rm -f .env.{{.PROVIDER_ID}}.tbas
+        i=0
+        for addr in $(cat $OUTLOG | fgrep zoneAccount | cut -d' ' -f5); do
+          if {{.dryrun}}; then
+            echo "export ACCOUNT${i}=$addr"
+          else
+            echo "export ACCOUNT${i}=$addr" >> .env.{{.PROVIDER_ID}}.tbas
+          fi
+          i=$((i+1))
+        done
+        {{.dryrun}} && exit 0
+        cat .env.{{.PROVIDER_ID}}.tbas
+
+       
+  local-up:
+
+    desc: |
+      start up the local downstream development
+
+      CLI_ARGS passed to docker compose up. eg '-- --pull=always'
+
+    cmds:
+      - |
+        cd {{.DS_DIR}} && docker compose --env-file {{.ROOT_DIR}}/.env.ds.compose up {{.CLI_ARGS}}
+
+  local-down:
+    cmds:
+      - cd {{.DS_DIR}} && docker compose down

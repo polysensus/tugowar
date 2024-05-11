@@ -63,6 +63,8 @@ contract TugAWar {
     GameResult []results;
     mapping(address => uint256) winners;
 
+    uint256 aatest;
+
     constructor(address allowedToken_, address allowedAccountImplementation_) {
 
       allowedToken = allowedToken_;
@@ -73,6 +75,12 @@ contract TugAWar {
 
       // alow games to start
       marker = startLine;
+    }
+
+    // open access method to test aa sponsored gas transactions
+    function aaTestAdd() public returns (uint256) {
+      aatest += 1;
+      return aatest;
     }
 
     function getResult(uint256 i) public view returns (GameResult memory) {

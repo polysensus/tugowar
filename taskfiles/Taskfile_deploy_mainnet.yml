@@ -1,0 +1,157 @@
+version: '3'
+
+vars:
+  PROVIDER_ID: '{{.PROVIDER_ID | default "local"}}'
+
+tasks:
+
+  help:
+    desc: extended help and reminders
+    cmds:
+      - |
+        echo "
+        required all:
+
+          RPC_URL: {{.RPC_URL}}
+
+        required some:
+
+          DEPLOY_HD_PATH: {{.DEPLOY_HD_PATH}}
+          DS_ZONE_ADDRESS: {{.DS_ZONE_ADDRESS}}
+          TUGAWAR_ADDRESS: {{.TUGAWAR_ADDRESS}}
+          DETERMINISTIC_DEPLOY_DEPLOY_SIGNER_PUB: $DETERMINISTIC_DEPLOY_DEPLOY_SIGNER_PUB
+          DETERMINISTIC_DEPLOY=$DETERMINISTIC_DEPLOY
+          ERC6551_REGISTRY_DEPLOY_DATA=$ERC6551_REGISTRY_DEPLOY_DATA
+          ERC6551_REGISTRY: $ERC6551_REGISTRY
+
+        Recipies
+          todo
+        
+        "
+
+  deploy-addr:
+    desc: resolve the wallet address for the ledger key at DEPLOY_HD_PATH
+    requires:
+      DEPLOY_HD_PATH:
+    cmds:
+      - |
+        addr=$(cast wallet address --ledger --hd-path {{.DEPLOY_HD_PATH}})
+        balance=$(cast balance -e -r {{.RPC_URL}} $addr)
+        echo "${addr} ${balance}"
+
+
+  deploy-6551-reg:
+    desc: |
+      deploy the registry
+
+      On many chains this is already deployed.
+
+    requires:
+      mpath:
+
+    cmds:
+      - |
+
+        source .env.{{.PROVIDER_ID}}
+        TX=$(cast mktx -r $RPC --ledger --mnemonic-derivation-path {{.mpath}} $DETERMINISTIC_DEPLOY $ERC6551_REGISTRY_DEPLOY_DATA)
+        echo $TX
+        cast publish -r $RPC $TX
+
+        cast code -r $RPC $ERC6551_REGISTRY
+
+  deploy-account-impl:
+    desc: deply the account implementation for the token bound accounts
+    requires:
+      mpath:
+
+    cmds:
+      - |
+        source .env.{{.PROVIDER_ID}}
+        XARGS="{{.CLI_ARGS}} --broadcast"
+
+        forge script \
+          --rpc-url $RPC scripts/DeployAccountImpl.s.sol \
+          --ledger \
+          --hd-paths {{.mpath}} \
+          --json $XARGS
+
+        echo "now store the address in .env.{{.PROVIDER_ID}}.6551"
+
+        echo "eg,
+        export ERC6551_REGISTRY=0x000000006551c19487814612e58FE06813775758
+        export export ERC6551_ACCOUNT_IMLEMENTATION_ADDRESS=<Contract Address>
+        "
+
+  env-setup:
+    desc: |
+      setup the env files for tugawar
+
+      based on the values available in the env and vars
+    cmds:
+      - |
+        mv .env.{{.PROVIDER_ID}}.tugawar .env.{{.PROVIDER_ID}}.tugawar.prev
+        mv tugowar-app/.env.{{.PROVIDER_ID}}.tugawar tugowar-app/.env.{{.PROVIDER_ID}}.tugawar.prev
+
+        echo "export TUGAWAR_ADDR={{.TUGAWAR_ADDR}}" \
+        > .env.{{.PROVIDER_ID}}.tugawar
+        echo "export DS_ZONE_ADDR={{.DS_ZONE_ADDR}}" \
+        >> .env.{{.PROVIDER_ID}}.tugawar
+
+        echo "export PUBLIC_{{.PROVIDER_ID | upper}}_TUGAWAR_ADDR={{.TUGAWAR_ADDR}}" \
+        > tugowar-app/.env.{{.PROVIDER_ID}}.tugawar
+        echo "export PUBLIC_{{.PROVIDER_ID | upper}}_DS_ZONE_ADDR={{.DS_ZONE_ADDR}}" \
+        >> tugowar-app/.env.{{.PROVIDER_ID}}.tugawar
+
+  deploy-tugawar:
+    desc: deply the tug awar game contract
+    vars:
+      dryrun: '{{.dryrun | default false}}'
+    cmds:
+      - |
+        source .env.{{.PROVIDER_ID}}.6551
+        XARGS="--skip-simulation {{.CLI_ARGS}}"
+        ! {{.dryrun}} && XARGS="$XARGS --broadcast"
+
+        [[ -z "{{.DS_ZONE_ADDR}}" ]] && echo "DS_ZONE_ADDR not set" && exit 1
+        export DS_ZONE_ADDR="{{.DS_ZONE_ADDR}}"
+
+        # export DS_ZONE_ADDR=$(task -s -d {{.ROOT_DIR}} ds-zone-addr)
+
+        OUTLOG=deployed.tugawar.log
+
+        forge script \
+          --rpc-url {{.RPC_URL}} scripts/DeployTugAWar.s.sol \
+          --ledger \
+          --hd-paths  {{.DEPLOY_HD_PATH}} \
+          --json $XARGS
+
+  deploy-zone-tbas:
+    desc: |
+      deploy some accounts
+
+      start: {{.start}} the zone token id to start at
+      n: {{.n}} the number of consecutive zone tokens to create accounts for.
+
+      remember that 4337's and 6551's can be used counter factually, the can be deployed or not at any time.
+
+    vars:
+      dryrun: '{{.dryrun | default false}}'
+      start: '{{.start | default 1}}'
+      n: '{{.n | default 5}}'
+    cmds:
+      - |
+        source .env.{{.PROVIDER_ID}}.6551
+        export START={{.start}}
+        export COUNT={{.n}}
+        export DS_ZONE_ADDR={{.DS_ZONE_ADDR}}
+        echo "START: $START, COUNT: $COUNT, DS_ZONE_ADDR: $DS_ZONE_ADDR"
+
+        XARGS="--skip-simulation {{.CLI_ARGS}}"
+        ! {{.dryrun}} && XARGS="$XARGS --broadcast"
+
+        forge script \
+          --rpc-url {{.RPC_URL}} scripts/CreateZoneTBAs.s.sol \
+          --ledger \
+          --hd-paths  {{.DEPLOY_HD_PATH}} \
+          --json $XARGS | tee tba-deploy-log.json
+

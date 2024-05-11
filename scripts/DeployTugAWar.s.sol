@@ -1,19 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "forge-std/Script.sol";
-
+import {console} from "forge-std/Script.sol";
+import {DeployScriptBase} from "./DeployScriptBase.sol";
 import {TugAWar} from "src/TugAWar.sol";
 
-contract DeployTugAWarScript is Script {
+contract DeployTugAWarScript is DeployScriptBase {
   function run() public {
-    uint256 deployKey = vm.envUint("DEPLOY_KEY");
-    vm.startBroadcast(deployKey);
-    runInternal();
+    startBroadcast();
+    _run();
     vm.stopBroadcast();
   }
 
-  function runInternal() internal {
+  function _run() internal {
     TugAWar taw = new TugAWar(
       vm.envAddress("DS_ZONE_ADDR"),
       vm.envAddress("ERC6551_ACCOUNT_IMLEMENTATION_ADDRESS"));

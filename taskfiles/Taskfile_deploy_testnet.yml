@@ -97,3 +97,32 @@ tasks:
 
         cast code -r {{.RPC_URL}} $ERC6551_REGISTRY
 
+  deploy-account-impl:
+    desc: deply the account implementation for the token bound accounts
+    vars:
+      dryrun: '{{.dryrun | default false}}'
+    cmds:
+      - |
+
+        source {{.ROOT_DIR}}/.env.{{.PROVIDER_ID}}
+
+        XARGS="--skip-simulation {{.CLI_ARGS}}"
+        ! {{.dryrun}} && XARGS="$XARGS --broadcast"
+
+        OUTLOG=deployed.account.implementation.log
+        forge script \
+          --rpc-url $RPC scripts/DeployAccountImpl.s.sol \
+          --silent --json $XARGS > $OUTLOG 2> /dev/null
+
+        ADDRESS=$(head -n 1 $OUTLOG  | jq -r .logs[0])
+        if {{.dryrun}}; then
+          echo ERC6551_ACCOUNT_IMLEMENTATION_ADDRESS=$ADDRESS
+          exit 0
+        fi
+
+        echo "export ERC6551_REGISTRY=0x000000006551c19487814612e58FE06813775758" \
+        > .env.{{.PROVIDER_ID}}.6551
+        echo "export ERC6551_ACCOUNT_IMLEMENTATION_ADDRESS=$ADDRESS" \
+        >> .env.{{.PROVIDER_ID}}.6551
+
+        cat .env.{{.PROVIDER_ID}}.6551
